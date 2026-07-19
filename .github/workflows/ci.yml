@@ -22,3 +22,19 @@ jobs:
         run: go vet ./...
       - name: test (incl. conformance golden vectors)
         run: go test -race ./...
+
+  ts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk-ts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: typecheck
+        run: npm run typecheck
+      - name: test (same golden vectors as Go)
+        run: npm test

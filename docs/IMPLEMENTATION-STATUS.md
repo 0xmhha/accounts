@@ -67,10 +67,11 @@
 | **ABI 인코더 + NativeCoinAdapter 바인딩** | ✅ 완료 | `abi`·`token` 패키지, balanceOf/transfer 라이브 검증 |
 | **EIP-2612 permit** | ✅ 완료 | 라이브 검증(off-chain 서명 → allowance) |
 | **HD 지갑/니모닉(BIP-39/32/44)** | ✅ 완료 | `hdwallet` 패키지, known-answer + 라이브 |
-| transferWithAuthorization(EIP-3009) | 미구현 | 사이클 2 잔여 |
+| **transferWithAuthorization(EIP-3009)** | ✅ 완료 | 라이브 검증(gasless, 제3자 relay) |
+| **TypeScript SDK (코어)** | ✅ 완료 | `sdk-ts` — Go와 **동일 골든 벡터 6종 전부 통과**(크로스언어 conformance). 나머지 기능 파리티는 후속 |
 | 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
-| KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
+| KeyStore OS 키체인/HSM 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
+| TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 후속 |
 | 모바일(Android/iOS) 바인딩 | 미구현 | 대형 항목(gomobile/UniFFI 툴체인 필요) |
-| TypeScript SDK | 미구현 | 대형 항목(별도 구현체, 동일 골든벡터 대상) |
 
 > no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명(EIP-191/712 포함)·암복호·배포·7702·상태쿼리·고수준 facade)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.

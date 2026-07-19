@@ -1,0 +1,22 @@
+{
+  "name": "@0xmhha/accounts",
+  "version": "0.1.0",
+  "description": "StableNet accounts SDK (TypeScript) — clean-room, conformance-tested against the shared golden vectors.",
+  "type": "module",
+  "license": "(Apache-2.0 OR MIT)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@noble/curves": "1.4.0",
+    "@noble/hashes": "1.4.0"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "vitest": "1.6.0"
+  }
+}
