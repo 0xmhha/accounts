@@ -35,3 +35,8 @@ Thumbs.db
 
 # stray cmd build output
 /e2e
+
+# Mobile build artifacts (gomobile bind output)
+*.aar
+*.xcframework
+*.framework
