@@ -256,8 +256,10 @@ func checkCreate2(ctx context.Context, c *transport.Client, chainID *big.Int, fu
 	}
 	factory := tx.CreateAddress(funded.Address(), nonce)
 
-	// Invoke the factory with salt || childInitCode.
-	childInit, _ := hex.DecodeString("6001600c60003960016000f300") // deploys runtime 0x00
+	// Child has real, callable runtime: it returns the 32-byte word 0x…42 for
+	// any call. This proves the CREATE2-deployed contract is operational, not
+	// just present. runtime = PUSH1 0x42;PUSH1 0;MSTORE;PUSH1 0x20;PUSH1 0;RETURN.
+	childInit, _ := hex.DecodeString("600a600c600039600a6000f3" + "604260005260206000f3")
 	var salt [32]byte
 	copy(salt[24:], []byte{0xca, 0xfe, 0xba, 0xbe, 0xde, 0xad, 0xbe, 0xef})
 	calldata := append(append([]byte{}, salt[:]...), childInit...)
@@ -275,11 +277,22 @@ func checkCreate2(ctx context.Context, c *transport.Client, chainID *big.Int, fu
 
 	want := tx.CreateAddress2(factory, salt, childInit)
 	code, err := c.Code(ctx, want)
-	if err == nil && len(code) > 0 {
-		record("tx CREATE2 (addr==CreateAddress2)", "PASS", "child="+want.Hex())
-	} else {
+	if err != nil || len(code) == 0 {
 		record("tx CREATE2 (factory)", "FAIL", "no code at computed CREATE2 addr "+want.Hex())
+		return
 	}
+	// Call the deployed contract and check it actually executes.
+	ret, err := c.Call(ctx, transport.CallMsg{To: &want}, "latest")
+	if err != nil {
+		record("tx CREATE2 (deploy+call)", "FAIL", "eth_call: "+err.Error())
+		return
+	}
+	if len(ret) != 32 || ret[31] != 0x42 {
+		record("tx CREATE2 (deploy+call)", "FAIL", fmt.Sprintf("unexpected return 0x%x", ret))
+		return
+	}
+	record("tx CREATE2 (addr==CreateAddress2 + callable)", "PASS",
+		fmt.Sprintf("child=%s returns 0x…%02x", want.Hex(), ret[31]))
 }
 
 func checkBlob(ctx context.Context, c *transport.Client, chainID *big.Int, funded *account.Account) {
