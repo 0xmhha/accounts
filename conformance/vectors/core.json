@@ -56,5 +56,20 @@
     "r": "0x28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276",
     "s": "0x67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83",
     "v": 37
+  },
+  "keystore": {
+    "note": "Canonical Web3 Secret Storage (keystore v3) pbkdf2 vector.",
+    "json": "{\"crypto\":{\"cipher\":\"aes-128-ctr\",\"cipherparams\":{\"iv\":\"6087dab2f9fdbbfaddc31a909735c1e6\"},\"ciphertext\":\"5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46\",\"kdf\":\"pbkdf2\",\"kdfparams\":{\"c\":262144,\"dklen\":32,\"prf\":\"hmac-sha256\",\"salt\":\"ae3cd4e7013836a3df6bd7241b12db061dbe2c6785853cce422d148a624ce0bd\"},\"mac\":\"517ead924a9d0dc3124507e3393d175ce3ff7c1e96529c6c555ce9e51205e9b2\"},\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"version\":3}",
+    "password": "testpassword",
+    "privKey": "0x7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d"
+  },
+  "hdwallet": {
+    "note": "BIP-39/44 MetaMask-default vector.",
+    "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    "passphrase": "",
+    "accounts": [
+      { "index": 0, "address": "0x9858effd232b4033e47d90003d41ec34ecaeda94" },
+      { "index": 1, "address": "0x6fac4d18c912343bf86fa7049364dd4e424ab9c0" }
+    ]
   }
 }

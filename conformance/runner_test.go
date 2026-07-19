@@ -15,6 +15,8 @@ import (
 
 	"github.com/0xmhha/accounts/account"
 	"github.com/0xmhha/accounts/crypto"
+	"github.com/0xmhha/accounts/hdwallet"
+	"github.com/0xmhha/accounts/keystore"
 	"github.com/0xmhha/accounts/signing"
 	"github.com/0xmhha/accounts/tx"
 	"github.com/0xmhha/accounts/types"
@@ -56,6 +58,19 @@ type vectors struct {
 		S        string `json:"s"`
 		V        int64  `json:"v"`
 	} `json:"legacyEip155"`
+	Keystore struct {
+		JSON     string `json:"json"`
+		Password string `json:"password"`
+		PrivKey  string `json:"privKey"`
+	} `json:"keystore"`
+	HDWallet struct {
+		Mnemonic   string `json:"mnemonic"`
+		Passphrase string `json:"passphrase"`
+		Accounts   []struct {
+			Index   uint32 `json:"index"`
+			Address string `json:"address"`
+		} `json:"accounts"`
+	} `json:"hdwallet"`
 }
 
 func load(t *testing.T) *vectors {
@@ -142,6 +157,34 @@ func TestConformanceEIP712Mail(t *testing.T) {
 	}
 	if got := "0x" + hex.EncodeToString(d); got != want {
 		t.Errorf("eip712 mail digest = %s, want %s", got, want)
+	}
+}
+
+func TestConformanceKeystore(t *testing.T) {
+	v := load(t).Keystore
+	key, err := keystore.Decrypt([]byte(v.JSON), v.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := "0x" + hex.EncodeToString(key); got != v.PrivKey {
+		t.Errorf("keystore decrypt = %s, want %s", got, v.PrivKey)
+	}
+}
+
+func TestConformanceHDWallet(t *testing.T) {
+	v := load(t).HDWallet
+	w, err := hdwallet.FromMnemonic(v.Mnemonic, v.Passphrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range v.Accounts {
+		acct, err := w.DeriveEthereum(a.Index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if acct.Address().Hex() != a.Address {
+			t.Errorf("hd derive[%d] = %s, want %s", a.Index, acct.Address().Hex(), a.Address)
+		}
 	}
 }
 
