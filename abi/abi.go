@@ -86,3 +86,10 @@ func DecodeAddress(data []byte) types.Address {
 	}
 	return types.BytesToAddress(data[12:32])
 }
+
+// DecodeBytes32 reads a bytes32 from the first 32 bytes of data.
+func DecodeBytes32(data []byte) [32]byte {
+	var out [32]byte
+	copy(out[:], data)
+	return out
+}

@@ -16,6 +16,7 @@ import (
 
 	"github.com/0xmhha/accounts/account"
 	"github.com/0xmhha/accounts/crypto"
+	"github.com/0xmhha/accounts/hdwallet"
 	"github.com/0xmhha/accounts/signing"
 	"github.com/0xmhha/accounts/token"
 	"github.com/0xmhha/accounts/transport"
@@ -75,6 +76,8 @@ func main() {
 	checkSigningHelpers(funded)
 	checkWalletFacade(ctx, c, funded)
 	checkTokenAdapter(ctx, c, funded)
+	checkPermit(ctx, c, funded)
+	checkHDWallet(ctx, c, funded)
 
 	summaryAndExit()
 }
@@ -456,6 +459,100 @@ func checkTokenAdapter(ctx context.Context, c *transport.Client, funded *account
 	} else {
 		record("token NativeCoinAdapter.transfer", "FAIL", fmt.Sprintf("balanceOf=%s err=%v", got, err))
 	}
+}
+
+// checkPermit runs a full EIP-2612 permit: owner signs off-chain, the permit is
+// submitted, and the resulting allowance is verified.
+func checkPermit(ctx context.Context, c *transport.Client, funded *account.Account) {
+	adapter := token.NativeCoinAdapter(c)
+	domainSep, err := adapter.DomainSeparator(ctx)
+	if err != nil {
+		record("token EIP-2612 permit", "FAIL", "DOMAIN_SEPARATOR: "+err.Error())
+		return
+	}
+	nonce, err := adapter.Nonces(ctx, funded.Address())
+	if err != nil {
+		record("token EIP-2612 permit", "FAIL", "nonces: "+err.Error())
+		return
+	}
+	spender, _ := account.Generate()
+	value := oneCoin
+	deadline := big.NewInt(99999999999) // far future
+
+	digest := token.PermitDigest(domainSep, funded.Address(), spender.Address(), value, nonce, deadline)
+	sig, err := funded.Sign(digest)
+	if err != nil {
+		record("token EIP-2612 permit", "FAIL", err.Error())
+		return
+	}
+	data, err := token.PermitData(funded.Address(), spender.Address(), value, deadline, sig)
+	if err != nil {
+		record("token EIP-2612 permit", "FAIL", err.Error())
+		return
+	}
+	w, _ := wallet.New(ctx, funded, c)
+	h, err := w.Execute(ctx, adapter.Address, data, nil)
+	if err != nil {
+		record("token EIP-2612 permit", "FAIL", "submit: "+err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("token EIP-2612 permit", "FAIL", "receipt: "+err.Error())
+		return
+	}
+	allow, err := adapter.Allowance(ctx, funded.Address(), spender.Address())
+	if err == nil && allow.Cmp(value) == 0 {
+		record("token EIP-2612 permit (off-chain sig → allowance)", "PASS", "allowance "+allow.String())
+	} else {
+		record("token EIP-2612 permit", "FAIL", fmt.Sprintf("allowance=%s err=%v", allow, err))
+	}
+}
+
+// checkHDWallet derives an account from a mnemonic (known-answer address) and
+// confirms the derived key produces node-valid transactions.
+func checkHDWallet(ctx context.Context, c *transport.Client, funded *account.Account) {
+	const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+	hw, err := hdwallet.FromMnemonic(mnemonic, "")
+	if err != nil {
+		record("hdwallet BIP-39/44 derive", "FAIL", err.Error())
+		return
+	}
+	derived, err := hw.DeriveEthereum(0)
+	if err != nil {
+		record("hdwallet BIP-39/44 derive", "FAIL", err.Error())
+		return
+	}
+	if derived.Address().Hex() != "0x9858effd232b4033e47d90003d41ec34ecaeda94" {
+		record("hdwallet BIP-39/44 derive", "FAIL", "unexpected address "+derived.Address().Hex())
+		return
+	}
+	record("hdwallet BIP-39/44 derive (known-answer)", "PASS", derived.Address().Hex())
+
+	// Fund the derived account and have it send — proves the derived key signs
+	// node-valid transactions.
+	fw, _ := wallet.New(ctx, funded, c)
+	// Fund generously: this chain's gas price is high, so 1-coin transfer costs
+	// several coins in gas.
+	if h, err := fw.SendCoin(ctx, derived.Address(), new(big.Int).Mul(oneCoin, big.NewInt(10))); err != nil {
+		record("hdwallet derived account transacts", "FAIL", "fund: "+err.Error())
+		return
+	} else if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("hdwallet derived account transacts", "FAIL", err.Error())
+		return
+	}
+	dw, _ := wallet.New(ctx, derived, c)
+	recipient, _ := account.Generate()
+	h, err := dw.SendCoin(ctx, recipient.Address(), oneCoin)
+	if err != nil {
+		record("hdwallet derived account transacts", "FAIL", err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("hdwallet derived account transacts", "FAIL", err.Error())
+		return
+	}
+	s, d := verifyBalance(ctx, c, recipient.Address(), oneCoin)
+	record("hdwallet derived account transacts", s, d)
 }
 
 // --- tx helpers -------------------------------------------------------------

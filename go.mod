@@ -4,6 +4,7 @@ go 1.23.12
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
+	github.com/tyler-smith/go-bip39 v1.1.0
 	golang.org/x/crypto v0.35.0
 )
 

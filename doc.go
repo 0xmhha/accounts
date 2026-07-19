@@ -10,11 +10,14 @@
 // # Package map (public API)
 //
 //	account    account creation, signing (incl. EIP-191/EIP-712), keystore + ECIES
-//	wallet     high-level facade: auto nonce/gas/tip + blacklist guard, send/deploy
+//	hdwallet   BIP-39 mnemonic + BIP-32/44 HD account derivation
+//	wallet     high-level facade: auto nonce/gas/tip + blacklist guard, send/deploy/execute
 //	tx         all transaction types (0x00,0x01,0x02,0x03,0x04,0x16) + CREATE2 + safety guards
 //	signing    SigningScheme (secp256k1@1), EIP-191 personal_sign, EIP-712 typed data
 //	crypto     Keccak-256, secp256k1 sign/recover, ECIES encrypt/decrypt
 //	keystore   Web3 Secret Storage (keystore v3) encrypt/decrypt
+//	abi        minimal ABI encoder/decoder for contract calls
+//	token      ERC-20 / NativeCoinAdapter bindings + EIP-2612 permit
 //	transport  JSON-RPC client + account state (Extra flag) queries
 //	types      primitive value types (Address, Hash)
 //

@@ -11,6 +11,7 @@ import (
 	"math/big"
 
 	"github.com/0xmhha/accounts/abi"
+	"github.com/0xmhha/accounts/crypto"
 	"github.com/0xmhha/accounts/signing"
 	"github.com/0xmhha/accounts/transport"
 	"github.com/0xmhha/accounts/types"
@@ -67,6 +68,52 @@ func (t *Token) Allowance(ctx context.Context, owner, spender types.Address) (*b
 		return nil, err
 	}
 	return t.callUint(ctx, data)
+}
+
+// DomainSeparator reads the token's EIP-712 DOMAIN_SEPARATOR() (bytes32).
+func (t *Token) DomainSeparator(ctx context.Context) ([32]byte, error) {
+	data, _ := abi.Pack("DOMAIN_SEPARATOR()")
+	ret, err := t.Client.Call(ctx, transport.CallMsg{To: &t.Address, Data: data}, "latest")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return abi.DecodeBytes32(ret), nil
+}
+
+// Nonces reads the EIP-2612 permit nonce for owner.
+func (t *Token) Nonces(ctx context.Context, owner types.Address) (*big.Int, error) {
+	data, err := abi.Pack("nonces(address)", owner)
+	if err != nil {
+		return nil, err
+	}
+	return t.callUint(ctx, data)
+}
+
+// permitTypeHash = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)").
+var permitTypeHash = crypto.Keccak256([]byte("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
+
+// PermitDigest computes the EIP-2612 permit signing digest using the token's
+// on-chain DOMAIN_SEPARATOR (so no name/version fetch is needed):
+// keccak(0x1901 || domainSeparator || keccak(PERMIT_TYPEHASH || owner || spender || value || nonce || deadline)).
+func PermitDigest(domainSep [32]byte, owner, spender types.Address, value, nonce, deadline *big.Int) []byte {
+	structHash := crypto.Keccak256(
+		permitTypeHash,
+		word(owner.Bytes()), word(spender.Bytes()),
+		bigWord(value), bigWord(nonce), bigWord(deadline),
+	)
+	return crypto.Keccak256([]byte{0x19, 0x01}, domainSep[:], structHash)
+}
+
+func word(b []byte) []byte {
+	out := make([]byte, 32)
+	copy(out[32-len(b):], b)
+	return out
+}
+
+func bigWord(x *big.Int) []byte {
+	out := make([]byte, 32)
+	x.FillBytes(out)
+	return out
 }
 
 // TransferData returns calldata for transfer(to, amount).

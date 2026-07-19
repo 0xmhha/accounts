@@ -25,7 +25,7 @@
 
 - 네트워크: chainbench `default`, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
 - 실행: `make live-e2e` (또는 `go run ./cmd/e2e -keystore <preset> -password 1`).
-- 결과: **PASS 21 / UNSUPPORTED 1 / FAIL 0**.
+- 결과: **PASS 24 / UNSUPPORTED 1 / FAIL 0**.
 
 | 항목 | 결과 | 근거 |
 |------|------|------|
@@ -47,6 +47,8 @@
 | **wallet.Deploy** | PASS | 배포·code 확인 |
 | **token NativeCoinAdapter.balanceOf** | PASS | `0x1000` eth_call, 네이티브 잔고와 일치 |
 | **token NativeCoinAdapter.transfer(ABI)** | PASS | ABI calldata + wallet.Execute, 수취인 balanceOf 확인 |
+| **token EIP-2612 permit** | PASS | 오프체인 서명 → 온체인 allowance 설정(DOMAIN_SEPARATOR/nonces 사용) |
+| **hdwallet BIP-39/44 파생** | PASS | known-answer(MetaMask 기본 `0x9858…`) + 파생계정 온체인 거래 |
 
 > 노드가 SDK 서명을 수락·채굴했다는 것은 sighash·RLP·봉투·이중서명·EIP-7702 위임이 노드와 **정확히 일치**함을 authoritative하게 증명한다. 0x03 Blob은 SDK가 올바른 tx를 만들지만 이 체인이 4844(Cancun)를 채택하지 않아 거부된다 — 스펙 `params.md`(Cancun 미채택)와 일치.
 
@@ -63,8 +65,12 @@
 | transport/wallet 유닛 테스트 | ✅ 완료 | httptest mock JSON-RPC로 오프라인 검증 |
 | KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만(ADR-0003 사이클1 범위) | 사이클 2 |
 | **ABI 인코더 + NativeCoinAdapter 바인딩** | ✅ 완료 | `abi`·`token` 패키지, balanceOf/transfer 라이브 검증 |
-| EIP-2612 permit 라이브 | 코드+유닛만 | 온체인 도메인(name/version) 조회 + permit 소비 흐름 필요 → 라이브 후속 |
-| transferWithAuthorization(EIP-3009) | 미구현 | 사이클 2 |
-| HD 지갑/니모닉(BIP-32/39/44) | 미구현 | 사이클 2 |
+| **EIP-2612 permit** | ✅ 완료 | 라이브 검증(off-chain 서명 → allowance) |
+| **HD 지갑/니모닉(BIP-39/32/44)** | ✅ 완료 | `hdwallet` 패키지, known-answer + 라이브 |
+| transferWithAuthorization(EIP-3009) | 미구현 | 사이클 2 잔여 |
+| 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
+| KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
+| 모바일(Android/iOS) 바인딩 | 미구현 | 대형 항목(gomobile/UniFFI 툴체인 필요) |
+| TypeScript SDK | 미구현 | 대형 항목(별도 구현체, 동일 골든벡터 대상) |
 
 > no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명(EIP-191/712 포함)·암복호·배포·7702·상태쿼리·고수준 facade)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.
