@@ -65,6 +65,21 @@ func (a *Account) Sign(hash []byte) ([]byte, error) {
 	return signing.Default.Sign(hash, a.priv)
 }
 
+// SignPersonal signs a message using EIP-191 personal_sign framing:
+// keccak256("\x19Ethereum Signed Message:\n" + len(msg) + msg).
+func (a *Account) SignPersonal(msg []byte) ([]byte, error) {
+	return a.Sign(signing.EIP191Hash(msg))
+}
+
+// SignTypedData signs EIP-712 typed structured data.
+func (a *Account) SignTypedData(td *signing.TypedData) ([]byte, error) {
+	digest, err := td.Digest()
+	if err != nil {
+		return nil, err
+	}
+	return a.Sign(digest)
+}
+
 // ToKeystore encrypts the account's private key into a keystore-v3 JSON document
 // protected by password. Use keystore.StandardScryptN/P for production strength.
 func (a *Account) ToKeystore(password string, scryptN, scryptP int) ([]byte, error) {

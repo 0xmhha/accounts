@@ -46,9 +46,10 @@ go-ethereum(=go-stablenet가 포크한 원본)·표준 라이브러리와 동일
 
 ```
 accounts/
-├─ account/     계정 생성·서명·keystore/ECIES 편의 (공개)
+├─ account/     계정 생성·서명(EIP-191/712 포함)·keystore/ECIES (공개)
+├─ wallet/      고수준 facade: auto nonce/gas/tip + blacklist 가드, 송금/배포 (공개)
 ├─ tx/          전 tx type(0x00~0x04, 0x16) + CREATE2 + 안전가드 (공개)
-├─ signing/     SigningScheme 추상화 (공개)
+├─ signing/     SigningScheme + EIP-191 personal_sign + EIP-712 typed data (공개)
 ├─ crypto/      Keccak-256·secp256k1·ECIES (공개)
 ├─ keystore/    keystore v3 암복호화 (공개)
 ├─ transport/   JSON-RPC 클라이언트 + 계정 상태 쿼리 (공개)

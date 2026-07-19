@@ -15,9 +15,12 @@ import (
 	"time"
 
 	"github.com/0xmhha/accounts/account"
+	"github.com/0xmhha/accounts/crypto"
+	"github.com/0xmhha/accounts/signing"
 	"github.com/0xmhha/accounts/transport"
 	"github.com/0xmhha/accounts/tx"
 	"github.com/0xmhha/accounts/types"
+	"github.com/0xmhha/accounts/wallet"
 )
 
 type result struct {
@@ -67,6 +70,8 @@ func main() {
 	checkSetCode7702(ctx, c, chainID, funded)
 	checkBlob(ctx, c, chainID, funded)
 	checkECIES()
+	checkSigningHelpers(funded)
+	checkWalletFacade(ctx, c, funded)
 
 	summaryAndExit()
 }
@@ -263,6 +268,84 @@ func checkECIES() {
 		}
 	}
 	record("crypto ECIES encrypt/decrypt (offline)", "FAIL", fmt.Sprintf("%v", err))
+}
+
+func checkSigningHelpers(acct *account.Account) {
+	// EIP-191 personal_sign roundtrip.
+	msg := []byte("stablenet login")
+	sig, err := acct.SignPersonal(msg)
+	if err == nil {
+		var rec types.Address
+		rec, err = crypto.Recover(signing.EIP191Hash(msg), sig)
+		if err == nil && rec == acct.Address() {
+			record("signing EIP-191 personal_sign", "PASS", "recovers to signer")
+		} else {
+			record("signing EIP-191 personal_sign", "FAIL", "recover mismatch")
+		}
+	} else {
+		record("signing EIP-191 personal_sign", "FAIL", err.Error())
+	}
+
+	// EIP-712 typed-data roundtrip.
+	td := &signing.TypedData{
+		Types: signing.TypedDataTypes{
+			"EIP712Domain": {{Name: "name", Type: "string"}, {Name: "chainId", Type: "uint256"}},
+			"Login":        {{Name: "user", Type: "address"}},
+		},
+		PrimaryType: "Login",
+		Domain:      signing.TypedDataDomain{Name: "StableNet", ChainID: big.NewInt(8283)},
+		Message:     map[string]interface{}{"user": acct.Address()},
+	}
+	tsig, err := acct.SignTypedData(td)
+	if err == nil {
+		digest, _ := td.Digest()
+		var rec types.Address
+		rec, err = crypto.Recover(digest, tsig)
+		if err == nil && rec == acct.Address() {
+			record("signing EIP-712 typed data", "PASS", "recovers to signer")
+			return
+		}
+	}
+	record("signing EIP-712 typed data", "FAIL", fmt.Sprintf("%v", err))
+}
+
+func checkWalletFacade(ctx context.Context, c *transport.Client, funded *account.Account) {
+	w, err := wallet.New(ctx, funded, c)
+	if err != nil {
+		record("wallet facade (New/SendCoin/Deploy)", "FAIL", err.Error())
+		return
+	}
+	// High-level SendCoin: auto nonce/gas/tip + blacklist guard.
+	recipient, _ := account.Generate()
+	h, err := w.SendCoin(ctx, recipient.Address(), oneCoin)
+	if err != nil {
+		record("wallet.SendCoin (auto nonce/gas/tip)", "FAIL", err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("wallet.SendCoin (auto nonce/gas/tip)", "FAIL", err.Error())
+		return
+	}
+	s, d := verifyBalance(ctx, c, recipient.Address(), oneCoin)
+	record("wallet.SendCoin (auto nonce/gas/tip)", s, d)
+
+	// High-level Deploy.
+	initCode, _ := hex.DecodeString("6001600c60003960016000f300")
+	dh, addr, err := w.Deploy(ctx, initCode, nil)
+	if err != nil {
+		record("wallet.Deploy", "FAIL", err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, dh); err != nil {
+		record("wallet.Deploy", "FAIL", err.Error())
+		return
+	}
+	code, err := c.Code(ctx, addr)
+	if err == nil && len(code) > 0 {
+		record("wallet.Deploy", "PASS", "deployed="+addr.Hex())
+	} else {
+		record("wallet.Deploy", "FAIL", "no code at "+addr.Hex())
+	}
 }
 
 // --- tx helpers -------------------------------------------------------------

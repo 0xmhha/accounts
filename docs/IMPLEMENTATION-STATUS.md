@@ -25,7 +25,7 @@
 
 - 네트워크: chainbench `default`, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
 - 실행: `make live-e2e` (또는 `go run ./cmd/e2e -keystore <preset> -password 1`).
-- 결과: **PASS 14 / UNSUPPORTED 1 / FAIL 0**.
+- 결과: **PASS 18 / UNSUPPORTED 1 / FAIL 0**.
 
 | 항목 | 결과 | 근거 |
 |------|------|------|
@@ -40,6 +40,10 @@
 | **tx 0x04 SetCode(EIP-7702)** | PASS | authority 코드 == `0xef0100‖delegate` (위임 성공) |
 | tx 0x03 Blob | **UNSUPPORTED** | 노드 거부: `type 3 rejected, pool not yet in Cancun` — **체인이 Cancun 미채택**(SDK 결함 아님) |
 | crypto ECIES 암복호(offline) | PASS | 라운드트립 |
+| **signing EIP-191 personal_sign** | PASS | known-answer + 서명자 복구 |
+| **signing EIP-712 typed data** | PASS | 공식 Mail digest + 서명자 복구 |
+| **wallet.SendCoin(auto nonce/gas/tip + blacklist guard)** | PASS | 채굴·잔고 확인 |
+| **wallet.Deploy** | PASS | 배포·code 확인 |
 
 > 노드가 SDK 서명을 수락·채굴했다는 것은 sighash·RLP·봉투·이중서명·EIP-7702 위임이 노드와 **정확히 일치**함을 authoritative하게 증명한다. 0x03 Blob은 SDK가 올바른 tx를 만들지만 이 체인이 4844(Cancun)를 채택하지 않아 거부된다 — 스펙 `params.md`(Cancun 미채택)와 일치.
 
@@ -47,12 +51,14 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택 → 이 체인에선 불가(SDK는 올바른 tx 생성). Cancun 도입 시 재검증 |
+| **EIP-712/EIP-191 서명 헬퍼** | ✅ 완료 | `account.SignPersonal/SignTypedData`, 공식 벡터 검증 |
+| **고수준 facade** | ✅ 완료 | `wallet` 패키지(SendCoin/Deploy/SendFeeDelegated/Call, auto nonce/gas/tip) |
+| **blacklist 사전조회 통합** | ✅ 완료 | `wallet.guardTransfer`가 sender/recipient blacklist 확인 |
+| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택. Cancun 도입 시 재검증 |
 | CREATE2 라이브 배포 | 미검증 | 주소 계산은 EIP-1014 known-answer로 검증. 라이브는 팩토리 컨트랙트 필요(후속) |
-| EIP-712/EIP-191 서명 헬퍼 | 미구현 | `Sign(hash)`로 우회 가능하나 표준 헬퍼 없음(dApp 로그인/permit) |
+| conformance 골든 벡터 파일/CI 러너(P6) | 미구현 | 라이브 e2e로 대체 검증 중, 회귀 자동화는 후속 |
 | KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만(ADR-0003 사이클1 범위) | 사이클 2 |
-| blacklist 사전조회 통합 가드 | transport에 조회 API 존재, 빌더 자동 연동은 미결 | 헬퍼로 통합 예정 |
-| 상위 SDK facade(고수준 SendTransaction 등) | 저수준 완비 | 편의 API 후속 |
 | ABI 인코딩/바인딩(시스템계약 호출) | raw call만 | 사이클 2 응용확장 |
+| HD 지갑/니모닉(BIP-32/39/44) | 미구현 | 사이클 2 |
 
-> no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명·암복호·배포·7702·상태쿼리)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.
+> no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명(EIP-191/712 포함)·암복호·배포·7702·상태쿼리·고수준 facade)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.
