@@ -19,7 +19,11 @@
 //	abi        minimal ABI encoder/decoder for contract calls
 //	token      ERC-20 / NativeCoinAdapter bindings + EIP-2612 permit
 //	transport  JSON-RPC client + account state (Extra flag) queries
+//	mobile     gomobile-safe facade for Android/iOS bindings
 //	types      primitive value types (Address, Hash)
+//
+// A TypeScript SDK mirroring this one (conformance-tested against the same
+// golden vectors) lives under sdk-ts/.
 //
 // # Internal
 //

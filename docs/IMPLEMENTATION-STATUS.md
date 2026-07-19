@@ -72,6 +72,7 @@
 | 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
 | KeyStore OS 키체인/HSM 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
 | TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 후속 |
-| 모바일(Android/iOS) 바인딩 | 미구현 | 대형 항목(gomobile/UniFFI 툴체인 필요) |
+| **모바일 wrapper(gomobile-safe)** | ✅ 완료(코드) | `mobile` 패키지 Go 테스트 통과. 네이티브 AAR/XCFramework 생성·실기기 검증은 툴체인 필요(mobile/README) |
+| 거버넌스 admin(minter 등) | 미구현 | 멀티시그 흐름 |
 
 > no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명(EIP-191/712 포함)·암복호·배포·7702·상태쿼리·고수준 facade)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.
