@@ -69,6 +69,7 @@ func main() {
 	checkContractCreate(ctx, c, chainID, funded)
 	checkSetCode7702(ctx, c, chainID, funded)
 	checkBlob(ctx, c, chainID, funded)
+	checkCreate2(ctx, c, chainID, funded)
 	checkECIES()
 	checkSigningHelpers(funded)
 	checkWalletFacade(ctx, c, funded)
@@ -228,6 +229,56 @@ func checkSetCode7702(ctx context.Context, c *transport.Client, chainID *big.Int
 		record("tx 0x04 SetCode (EIP-7702, delegation set)", "PASS", "code=0x"+hex.EncodeToString(code))
 	} else {
 		record("tx 0x04 SetCode (EIP-7702)", "PASS", "mined; delegation code=0x"+hex.EncodeToString(code))
+	}
+}
+
+// checkCreate2 deploys a minimal CREATE2 factory, invokes it with (salt ||
+// childInitCode), and verifies the child lands at the SDK-computed CREATE2
+// address (proving CreateAddress2 matches the node's on-chain CREATE2).
+func checkCreate2(ctx context.Context, c *transport.Client, chainID *big.Int, funded *account.Account) {
+	// Factory runtime reads calldata = salt(32) || initCode, runs CREATE2(0,
+	// initOffset, initLen, salt), and returns the deployed address.
+	factoryInit, _ := hex.DecodeString(
+		"601b600c600039601b6000f3" + "602036038060206000376000359060006000f560005260206000f3")
+	nonce, err := c.Nonce(ctx, funded.Address())
+	if err != nil {
+		record("tx CREATE2 (factory)", "FAIL", err.Error())
+		return
+	}
+	fh, err := sendDynamicRaw(ctx, c, chainID, funded, nil, big.NewInt(0), factoryInit, 300000, nonce)
+	if err != nil {
+		record("tx CREATE2 (factory)", "FAIL", "deploy factory: "+err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, fh); err != nil {
+		record("tx CREATE2 (factory)", "FAIL", "factory receipt: "+err.Error())
+		return
+	}
+	factory := tx.CreateAddress(funded.Address(), nonce)
+
+	// Invoke the factory with salt || childInitCode.
+	childInit, _ := hex.DecodeString("6001600c60003960016000f300") // deploys runtime 0x00
+	var salt [32]byte
+	copy(salt[24:], []byte{0xca, 0xfe, 0xba, 0xbe, 0xde, 0xad, 0xbe, 0xef})
+	calldata := append(append([]byte{}, salt[:]...), childInit...)
+
+	n2, _ := c.Nonce(ctx, funded.Address())
+	ih, err := sendDynamicRaw(ctx, c, chainID, funded, &factory, big.NewInt(0), calldata, 300000, n2)
+	if err != nil {
+		record("tx CREATE2 (factory)", "FAIL", "invoke: "+err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, ih); err != nil {
+		record("tx CREATE2 (factory)", "FAIL", "invoke receipt: "+err.Error())
+		return
+	}
+
+	want := tx.CreateAddress2(factory, salt, childInit)
+	code, err := c.Code(ctx, want)
+	if err == nil && len(code) > 0 {
+		record("tx CREATE2 (addr==CreateAddress2)", "PASS", "child="+want.Hex())
+	} else {
+		record("tx CREATE2 (factory)", "FAIL", "no code at computed CREATE2 addr "+want.Hex())
 	}
 }
 

@@ -1,0 +1,60 @@
+{
+  "specVersion": "protocol/v0",
+  "note": "Language-neutral golden vectors anchored to external standards (EIP-155, EIP-1014, EIP-712, Web3 Secret Storage). Any SDK implementation MUST reproduce these. See docs/spec/conformance/vectors-schema.md.",
+  "address": [
+    {
+      "privKey": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "address": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
+    },
+    {
+      "privKey": "0x4646464646464646464646464646464646464646464646464646464646464646",
+      "address": "0x9d8a62f656a8d1615c1294fd71e9cfb3e4855a4f"
+    }
+  ],
+  "create2": [
+    {
+      "sender": "0x0000000000000000000000000000000000000000",
+      "salt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "initCode": "0x00",
+      "address": "0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38"
+    },
+    {
+      "sender": "0xdeadbeef00000000000000000000000000000000",
+      "salt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "initCode": "0x00",
+      "address": "0xb928f69bb1d91cd65274e3c79d8986362984fda3"
+    },
+    {
+      "sender": "0x00000000000000000000000000000000deadbeef",
+      "salt": "0x00000000000000000000000000000000000000000000000000000000cafebabe",
+      "initCode": "0xdeadbeef",
+      "address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7"
+    }
+  ],
+  "extra": [
+    { "raw": "0x8000000000000000", "blacklisted": true, "authorized": false },
+    { "raw": "0x4000000000000000", "blacklisted": false, "authorized": true },
+    { "raw": "0xc000000000000000", "blacklisted": true, "authorized": true },
+    { "raw": "0x2000000000000000", "blacklisted": false, "authorized": false },
+    { "raw": "0x0", "blacklisted": false, "authorized": false }
+  ],
+  "eip191": [
+    {
+      "message": "hello",
+      "digest": "0x50b2c43fd39106bafbba0da34fc430e1f91e3c96ea2acee2bc34119f92b37750"
+    }
+  ],
+  "eip712MailDigest": "0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2",
+  "legacyEip155": {
+    "privKey": "0x4646464646464646464646464646464646464646464646464646464646464646",
+    "chainId": 1,
+    "nonce": 9,
+    "gasPrice": "20000000000",
+    "gas": 21000,
+    "to": "0x3535353535353535353535353535353535353535",
+    "value": "1000000000000000000",
+    "r": "0x28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276",
+    "s": "0x67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83",
+    "v": 37
+  }
+}

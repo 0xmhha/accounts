@@ -25,7 +25,7 @@
 
 - 네트워크: chainbench `default`, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
 - 실행: `make live-e2e` (또는 `go run ./cmd/e2e -keystore <preset> -password 1`).
-- 결과: **PASS 18 / UNSUPPORTED 1 / FAIL 0**.
+- 결과: **PASS 19 / UNSUPPORTED 1 / FAIL 0**.
 
 | 항목 | 결과 | 근거 |
 |------|------|------|
@@ -38,6 +38,7 @@
 | **tx 0x16 FeeDelegate(이중서명)** | PASS | 채굴·잔고 확인, sender/feePayer 분리 |
 | **tx CREATE(배포)** | PASS | 배포 주소 == `CreateAddress(sender,nonce)` == 영수증 contractAddress, code 존재 |
 | **tx 0x04 SetCode(EIP-7702)** | PASS | authority 코드 == `0xef0100‖delegate` (위임 성공) |
+| **tx CREATE2(팩토리 배포·호출)** | PASS | child 주소 == `CreateAddress2(factory,salt,initCode)`, 온체인 일치 |
 | tx 0x03 Blob | **UNSUPPORTED** | 노드 거부: `type 3 rejected, pool not yet in Cancun` — **체인이 Cancun 미채택**(SDK 결함 아님) |
 | crypto ECIES 암복호(offline) | PASS | 라운드트립 |
 | **signing EIP-191 personal_sign** | PASS | known-answer + 서명자 복구 |
@@ -54,9 +55,9 @@
 | **EIP-712/EIP-191 서명 헬퍼** | ✅ 완료 | `account.SignPersonal/SignTypedData`, 공식 벡터 검증 |
 | **고수준 facade** | ✅ 완료 | `wallet` 패키지(SendCoin/Deploy/SendFeeDelegated/Call, auto nonce/gas/tip) |
 | **blacklist 사전조회 통합** | ✅ 완료 | `wallet.guardTransfer`가 sender/recipient blacklist 확인 |
-| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택. Cancun 도입 시 재검증 |
-| CREATE2 라이브 배포 | 미검증 | 주소 계산은 EIP-1014 known-answer로 검증. 라이브는 팩토리 컨트랙트 필요(후속) |
-| conformance 골든 벡터 파일/CI 러너(P6) | 미구현 | 라이브 e2e로 대체 검증 중, 회귀 자동화는 후속 |
+| **CREATE2 라이브 배포** | ✅ 완료 | 팩토리 컨트랙트로 온체인 CREATE2 실증(`cmd/e2e`) |
+| **conformance 골든 벡터 + CI(P6)** | ✅ 완료 | `conformance/vectors/core.json` + 러너 + `.github/workflows/ci.yml` |
+| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택. Cancun 도입 시 재검증(불가) |
 | KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만(ADR-0003 사이클1 범위) | 사이클 2 |
 | ABI 인코딩/바인딩(시스템계약 호출) | raw call만 | 사이클 2 응용확장 |
 | HD 지갑/니모닉(BIP-32/39/44) | 미구현 | 사이클 2 |
