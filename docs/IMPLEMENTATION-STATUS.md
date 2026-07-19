@@ -57,7 +57,8 @@
 | **blacklist 사전조회 통합** | ✅ 완료 | `wallet.guardTransfer`가 sender/recipient blacklist 확인 |
 | **CREATE2 라이브 배포** | ✅ 완료 | 팩토리 컨트랙트로 온체인 CREATE2 실증(`cmd/e2e`) |
 | **conformance 골든 벡터 + CI(P6)** | ✅ 완료 | `conformance/vectors/core.json` + 러너 + `.github/workflows/ci.yml` |
-| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택. Cancun 도입 시 재검증(불가) |
+| tx 0x03 Blob | **범위 제외** | go-stablenet는 blob(EIP-4844)을 지원하지 않음. SDK는 tx를 만들 수 있으나 체인이 수락하지 않으므로 스코프에서 제외 |
+| transport/wallet 유닛 테스트 | ✅ 완료 | httptest mock JSON-RPC로 오프라인 검증 |
 | KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만(ADR-0003 사이클1 범위) | 사이클 2 |
 | ABI 인코딩/바인딩(시스템계약 호출) | raw call만 | 사이클 2 응용확장 |
 | HD 지갑/니모닉(BIP-32/39/44) | 미구현 | 사이클 2 |

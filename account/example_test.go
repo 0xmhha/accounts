@@ -7,6 +7,7 @@ import (
 	"github.com/0xmhha/accounts/account"
 	"github.com/0xmhha/accounts/crypto"
 	"github.com/0xmhha/accounts/keystore"
+	"github.com/0xmhha/accounts/signing"
 )
 
 // Create an account from an existing private key and read its address.
@@ -39,6 +40,18 @@ func ExampleAccount_ToKeystore() {
 	// Later: decrypt.
 	loaded, _ := account.FromKeystore(doc, "my-password")
 	fmt.Println(loaded.Address() == acct.Address())
+	// Output: true
+}
+
+// Sign a message with EIP-191 personal_sign framing; the signature recovers to
+// the signer.
+func ExampleAccount_SignPersonal() {
+	priv, _ := hex.DecodeString("4646464646464646464646464646464646464646464646464646464646464646")
+	acct, _ := account.FromPrivateKeyBytes(priv)
+
+	sig, _ := acct.SignPersonal([]byte("Sign in @ 1700000000"))
+	signer, _ := crypto.Recover(signing.EIP191Hash([]byte("Sign in @ 1700000000")), sig)
+	fmt.Println(signer == acct.Address())
 	// Output: true
 }
 
