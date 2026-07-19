@@ -16,6 +16,7 @@
 //	signing    SigningScheme (secp256k1@1), EIP-191 personal_sign, EIP-712 typed data
 //	crypto     Keccak-256, secp256k1 sign/recover, ECIES encrypt/decrypt
 //	keystore   Web3 Secret Storage (keystore v3) encrypt/decrypt
+//	vault      account store over pluggable backends (memory/file/OS keychain)
 //	abi        minimal ABI encoder/decoder for contract calls
 //	token      ERC-20 / NativeCoinAdapter bindings + EIP-2612 permit + EIP-3009
 //	governance read bindings for validator/minter/blacklist state

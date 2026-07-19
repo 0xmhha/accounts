@@ -72,7 +72,7 @@
 | **transferWithAuthorization(EIP-3009)** | ✅ 완료 | 라이브 검증(gasless, 제3자 relay) |
 | **TypeScript SDK (코어)** | ✅ 완료 | **별도 저장소 `0xmhha/accounts-ts`**(ADR-0002 정정). Go와 동일 골든 벡터 6종 전부 통과. 파리티는 후속 |
 | 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
-| KeyStore OS 키체인/HSM 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
+| **KeyStore 저장 백엔드** | ✅ 완료 | `vault` 패키지: pluggable Backend + Memory/File(테스트) + macOS Keychain(darwin, 컴파일·로직 검증). HSM/기타는 Backend 구현으로 추가 |
 | TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 별도 repo `accounts-ts`에서 후속 |
 | **모바일 wrapper(gomobile-safe)** | ✅ 완료(코드) | `mobile` 패키지 Go 테스트 통과. 네이티브 AAR/XCFramework 생성·실기기 검증은 툴체인 필요(mobile/README) |
 | **거버넌스 read 바인딩** | ✅ 완료 | `governance` 패키지(validator/minter/blacklist 조회), 라이브 검증 |
