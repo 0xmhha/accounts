@@ -25,7 +25,7 @@
 
 - 네트워크: chainbench `default`, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
 - 실행: `make live-e2e` (또는 `go run ./cmd/e2e -keystore <preset> -password 1`).
-- 결과: **PASS 24 / UNSUPPORTED 1 / FAIL 0**.
+- 결과: **PASS 27 / UNSUPPORTED 1 / FAIL 0**.
 
 | 항목 | 결과 | 근거 |
 |------|------|------|
@@ -49,6 +49,8 @@
 | **token NativeCoinAdapter.transfer(ABI)** | PASS | ABI calldata + wallet.Execute, 수취인 balanceOf 확인 |
 | **token EIP-2612 permit** | PASS | 오프체인 서명 → 온체인 allowance 설정(DOMAIN_SEPARATOR/nonces 사용) |
 | **hdwallet BIP-39/44 파생** | PASS | known-answer(MetaMask 기본 `0x9858…`) + 파생계정 온체인 거래 |
+| **token EIP-3009 transferWithAuthorization** | PASS | gasless, 제3자 relay |
+| **governance read 바인딩** | PASS | GovValidator.validatorCount=4·isValidator, minter/blacklist 카운트 |
 
 > 노드가 SDK 서명을 수락·채굴했다는 것은 sighash·RLP·봉투·이중서명·EIP-7702 위임이 노드와 **정확히 일치**함을 authoritative하게 증명한다. 0x03 Blob은 SDK가 올바른 tx를 만들지만 이 체인이 4844(Cancun)를 채택하지 않아 거부된다 — 스펙 `params.md`(Cancun 미채택)와 일치.
 
@@ -73,6 +75,7 @@
 | KeyStore OS 키체인/HSM 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
 | TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 별도 repo `accounts-ts`에서 후속 |
 | **모바일 wrapper(gomobile-safe)** | ✅ 완료(코드) | `mobile` 패키지 Go 테스트 통과. 네이티브 AAR/XCFramework 생성·실기기 검증은 툴체인 필요(mobile/README) |
-| 거버넌스 admin(minter 등) | 미구현 | 멀티시그 흐름 |
+| **거버넌스 read 바인딩** | ✅ 완료 | `governance` 패키지(validator/minter/blacklist 조회), 라이브 검증 |
+| 거버넌스 admin write(mint 등) | 미구현 | 온체인 멀티시그 흐름(SDK 범위 밖) |
 
 > no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명(EIP-191/712 포함)·암복호·배포·7702·상태쿼리·고수준 facade)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.

@@ -17,7 +17,8 @@
 //	crypto     Keccak-256, secp256k1 sign/recover, ECIES encrypt/decrypt
 //	keystore   Web3 Secret Storage (keystore v3) encrypt/decrypt
 //	abi        minimal ABI encoder/decoder for contract calls
-//	token      ERC-20 / NativeCoinAdapter bindings + EIP-2612 permit
+//	token      ERC-20 / NativeCoinAdapter bindings + EIP-2612 permit + EIP-3009
+//	governance read bindings for validator/minter/blacklist state
 //	transport  JSON-RPC client + account state (Extra flag) queries
 //	mobile     gomobile-safe facade for Android/iOS bindings
 //	types      primitive value types (Address, Hash)

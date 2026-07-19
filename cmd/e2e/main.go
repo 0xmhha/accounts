@@ -16,6 +16,7 @@ import (
 
 	"github.com/0xmhha/accounts/account"
 	"github.com/0xmhha/accounts/crypto"
+	"github.com/0xmhha/accounts/governance"
 	"github.com/0xmhha/accounts/hdwallet"
 	"github.com/0xmhha/accounts/signing"
 	"github.com/0xmhha/accounts/token"
@@ -79,6 +80,7 @@ func main() {
 	checkPermit(ctx, c, funded)
 	checkTransferWithAuth(ctx, c, funded)
 	checkHDWallet(ctx, c, funded)
+	checkGovernance(ctx, c, funded)
 
 	summaryAndExit()
 }
@@ -606,6 +608,39 @@ func checkHDWallet(ctx context.Context, c *transport.Client, funded *account.Acc
 	}
 	s, d := verifyBalance(ctx, c, recipient.Address(), oneCoin)
 	record("hdwallet derived account transacts", s, d)
+}
+
+// checkGovernance exercises the read-only governance bindings against the live
+// contracts.
+func checkGovernance(ctx context.Context, c *transport.Client, funded *account.Account) {
+	g := governance.New(c)
+
+	vc, err := g.ValidatorCount(ctx)
+	if err != nil || vc.Sign() <= 0 {
+		record("governance GovValidator.validatorCount", "FAIL", fmt.Sprintf("%v (%v)", vc, err))
+		return
+	}
+	// The funded preset (node1) is a validator.
+	isVal, err := g.IsValidator(ctx, funded.Address())
+	if err != nil {
+		record("governance GovValidator.isValidator", "FAIL", err.Error())
+		return
+	}
+	record("governance GovValidator (count + isValidator)", "PASS",
+		fmt.Sprintf("count=%s isValidator(funded)=%v", vc, isVal))
+
+	mc, err := g.MinterCount(ctx)
+	if err != nil {
+		record("governance GovMasterMinter.minterCount", "FAIL", err.Error())
+		return
+	}
+	bc, err := g.BlacklistCount(ctx)
+	if err != nil {
+		record("governance GovCouncil.blacklistCount", "FAIL", err.Error())
+		return
+	}
+	record("governance minter/blacklist counts", "PASS",
+		fmt.Sprintf("minters=%s blacklisted=%s", mc, bc))
 }
 
 // --- tx helpers -------------------------------------------------------------
