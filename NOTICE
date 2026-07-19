@@ -1,0 +1,19 @@
+stablenet-accounts
+Copyright (c) 2026 0xmhha
+
+This product is an independent, clean-room implementation of a StableNet
+accounts/signing SDK. It does NOT include or link any go-stablenet
+(github.com/ethereum/go-ethereum fork) source code, which is licensed under
+LGPL-3.0 / GPL-3.0. See docs/adr/ADR-0001 for the rationale.
+
+Third-party components (permissively licensed):
+
+  * github.com/decred/dcrd/dcrec/secp256k1/v4 — ISC License
+      secp256k1 key operations and ECDSA sign/recover.
+  * golang.org/x/crypto/sha3 — BSD-3-Clause License
+      Keccak-256 hashing.
+
+RLP encoding and all StableNet-specific logic (0x16 fee-delegation
+dual-signature, account Extra bitmap) are original implementations in this
+repository, written against docs/spec/protocol/v0 and verified by golden
+vectors sourced from a go-stablenet node.

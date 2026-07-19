@@ -1,0 +1,142 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "StableNet Accounts Protocol RPC",
+    "version": "0.0.0",
+    "description": "SDK가 사용하는 JSON-RPC 메서드. go-stablenet은 커스텀 네임스페이스가 없으며 eth_*에 수수료위임 서명 메서드만 추가한다. 정본 규범은 rpc.md. 이 문서는 그 기계판독 표현이다.",
+    "license": { "name": "TBD (ADR-0001)" }
+  },
+  "x-stablenet": {
+    "chainIds": { "mainnet": 8282, "testnet": 8283 },
+    "customMethods": ["eth_signRawFeeDelegateTransaction", "personal_signRawFeeDelegateTransaction"],
+    "customResultFields": {
+      "eth_getProof.result.extra": "hex uint64 계정 Extra 플래그(omitempty). bit63=blacklisted, bit62=authorized. account.md 참조."
+    }
+  },
+  "methods": [
+    {
+      "name": "eth_chainId",
+      "summary": "체인 ID (서명 chainId 확인)",
+      "params": [],
+      "result": { "name": "chainId", "schema": { "$ref": "#/components/schemas/Quantity" } }
+    },
+    {
+      "name": "eth_getTransactionCount",
+      "summary": "주소의 nonce",
+      "params": [
+        { "name": "address", "required": true, "schema": { "$ref": "#/components/schemas/Address" } },
+        { "name": "block", "required": true, "schema": { "$ref": "#/components/schemas/BlockTag" } }
+      ],
+      "result": { "name": "nonce", "schema": { "$ref": "#/components/schemas/Quantity" } }
+    },
+    {
+      "name": "eth_estimateGas",
+      "summary": "가스 양 예측 (스톡). 0x16/authorized-tip은 예측 가스에 영향 없음.",
+      "params": [
+        { "name": "tx", "required": true, "schema": { "$ref": "#/components/schemas/TransactionArgs" } },
+        { "name": "block", "required": false, "schema": { "$ref": "#/components/schemas/BlockTag" } }
+      ],
+      "result": { "name": "gas", "schema": { "$ref": "#/components/schemas/Quantity" } }
+    },
+    {
+      "name": "eth_gasPrice",
+      "summary": "가스 가격 제안 (Anzeon 정책 반영)",
+      "params": [],
+      "result": { "name": "gasPrice", "schema": { "$ref": "#/components/schemas/Quantity" } }
+    },
+    {
+      "name": "eth_maxPriorityFeePerGas",
+      "summary": "우선순위 팁 제안. 비인증 계정은 거버넌스 GasTip이 강제되므로 이 값을 사용할 것(params.md §4).",
+      "params": [],
+      "result": { "name": "tip", "schema": { "$ref": "#/components/schemas/Quantity" } }
+    },
+    {
+      "name": "eth_getProof",
+      "summary": "계정/스토리지 프루프. StableNet은 result에 extra(계정 플래그)를 추가한다.",
+      "params": [
+        { "name": "address", "required": true, "schema": { "$ref": "#/components/schemas/Address" } },
+        { "name": "storageKeys", "required": true, "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Hash32" } } },
+        { "name": "block", "required": true, "schema": { "$ref": "#/components/schemas/BlockTag" } }
+      ],
+      "result": { "name": "account", "schema": { "$ref": "#/components/schemas/AccountResult" } }
+    },
+    {
+      "name": "eth_call",
+      "summary": "읽기 호출. AccountManager 0xB00003 isBlacklisted/isAuthorized getter 등에 사용.",
+      "params": [
+        { "name": "tx", "required": true, "schema": { "$ref": "#/components/schemas/TransactionArgs" } },
+        { "name": "block", "required": false, "schema": { "$ref": "#/components/schemas/BlockTag" } }
+      ],
+      "result": { "name": "data", "schema": { "$ref": "#/components/schemas/Bytes" } }
+    },
+    {
+      "name": "eth_sendRawTransaction",
+      "summary": "서명된 raw tx 전송 (0x16 포함). SDK 기본 경로.",
+      "params": [
+        { "name": "rawTx", "required": true, "schema": { "$ref": "#/components/schemas/Bytes" } }
+      ],
+      "result": { "name": "txHash", "schema": { "$ref": "#/components/schemas/Hash32" } }
+    },
+    {
+      "name": "eth_getTransactionReceipt",
+      "summary": "트랜잭션 영수증",
+      "params": [
+        { "name": "txHash", "required": true, "schema": { "$ref": "#/components/schemas/Hash32" } }
+      ],
+      "result": { "name": "receipt", "schema": { "type": ["object", "null"] } }
+    },
+    {
+      "name": "eth_signRawFeeDelegateTransaction",
+      "summary": "[선택/StableNet 고유] sender-서명된 raw DynamicFee tx + feePayer를 받아 0x16으로 감싸 노드 키로 대납 서명. 완전 클라이언트측 SDK는 불필요.",
+      "params": [
+        { "name": "args", "required": true, "schema": { "$ref": "#/components/schemas/TransactionArgs" } }
+      ],
+      "result": { "name": "signed", "schema": { "type": "object" } }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Quantity": { "type": "string", "pattern": "^0x([1-9a-f][0-9a-f]*|0)$" },
+      "Bytes": { "type": "string", "pattern": "^0x[0-9a-f]*$" },
+      "Address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+      "Hash32": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+      "BlockTag": { "type": "string", "description": "'latest' | 'pending' | 'earliest' | 'safe' | 'finalized' | 0x-quantity" },
+      "AccountResult": {
+        "type": "object",
+        "description": "스톡 AccountResult + StableNet extra 필드.",
+        "properties": {
+          "address": { "$ref": "#/components/schemas/Address" },
+          "balance": { "$ref": "#/components/schemas/Quantity" },
+          "nonce": { "$ref": "#/components/schemas/Quantity" },
+          "codeHash": { "$ref": "#/components/schemas/Hash32" },
+          "storageHash": { "$ref": "#/components/schemas/Hash32" },
+          "accountProof": { "type": "array", "items": { "$ref": "#/components/schemas/Bytes" } },
+          "storageProof": { "type": "array" },
+          "extra": {
+            "$ref": "#/components/schemas/Quantity",
+            "description": "hex uint64 계정 Extra 플래그. omitempty(0이면 생략→부재 시 0으로 간주). bit63=blacklisted, bit62=authorized."
+          }
+        }
+      },
+      "TransactionArgs": {
+        "type": "object",
+        "description": "스톡 tx args + StableNet feePayer/FV/FR/FS. from/to/value/data/gas/nonce/type/maxFeePerGas/maxPriorityFeePerGas/accessList 등.",
+        "properties": {
+          "from": { "$ref": "#/components/schemas/Address" },
+          "to": { "$ref": "#/components/schemas/Address" },
+          "value": { "$ref": "#/components/schemas/Quantity" },
+          "data": { "$ref": "#/components/schemas/Bytes" },
+          "gas": { "$ref": "#/components/schemas/Quantity" },
+          "nonce": { "$ref": "#/components/schemas/Quantity" },
+          "type": { "$ref": "#/components/schemas/Quantity" },
+          "maxFeePerGas": { "$ref": "#/components/schemas/Quantity" },
+          "maxPriorityFeePerGas": { "$ref": "#/components/schemas/Quantity" },
+          "feePayer": {
+            "$ref": "#/components/schemas/Address",
+            "description": "StableNet 고유. 존재 + sender V/R/S가 있으면 0x16 FeeDelegate tx로 구성됨."
+          }
+        }
+      }
+    }
+  }
+}
