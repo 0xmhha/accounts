@@ -35,7 +35,3 @@ Thumbs.db
 
 # stray cmd build output
 /e2e
-
-# Node / TypeScript SDK
-node_modules/
-sdk-ts/dist/

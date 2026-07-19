@@ -68,10 +68,10 @@
 | **EIP-2612 permit** | ✅ 완료 | 라이브 검증(off-chain 서명 → allowance) |
 | **HD 지갑/니모닉(BIP-39/32/44)** | ✅ 완료 | `hdwallet` 패키지, known-answer + 라이브 |
 | **transferWithAuthorization(EIP-3009)** | ✅ 완료 | 라이브 검증(gasless, 제3자 relay) |
-| **TypeScript SDK (코어)** | ✅ 완료 | `sdk-ts` — Go와 **동일 골든 벡터 6종 전부 통과**(크로스언어 conformance). 나머지 기능 파리티는 후속 |
+| **TypeScript SDK (코어)** | ✅ 완료 | **별도 저장소 `0xmhha/accounts-ts`**(ADR-0002 정정). Go와 동일 골든 벡터 6종 전부 통과. 파리티는 후속 |
 | 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
 | KeyStore OS 키체인/HSM 백엔드 | 파일 keystore만 | 사이클 2 잔여 |
-| TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 후속 |
+| TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 별도 repo `accounts-ts`에서 후속 |
 | **모바일 wrapper(gomobile-safe)** | ✅ 완료(코드) | `mobile` 패키지 Go 테스트 통과. 네이티브 AAR/XCFramework 생성·실기기 검증은 툴체인 필요(mobile/README) |
 | 거버넌스 admin(minter 등) | 미구현 | 멀티시그 흐름 |
 

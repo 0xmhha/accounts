@@ -22,8 +22,8 @@
 //	mobile     gomobile-safe facade for Android/iOS bindings
 //	types      primitive value types (Address, Hash)
 //
-// A TypeScript SDK mirroring this one (conformance-tested against the same
-// golden vectors) lives under sdk-ts/.
+// A separate TypeScript SDK (0xmhha/accounts-ts) mirrors this one and is
+// verified against the same conformance golden vectors.
 //
 // # Internal
 //

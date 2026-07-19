@@ -62,6 +62,8 @@ accounts/
 
 > `/pkg` 컨벤션은 쓰지 않는다 — 라이브러리에는 불필요한 중첩이며 go-ethereum 생태계 관례가 아니다(ADR/README 참조).
 
+**TypeScript SDK는 별도 저장소** [`0xmhha/accounts-ts`](https://github.com/0xmhha/accounts-ts)에 있으며, 이 저장소의 conformance 골든 벡터를 동일하게 통과한다(ADR-0002 정정).
+
 ## 예제
 
 | 위치 | 내용 |

@@ -3,6 +3,15 @@
 ## Status
 
 Accepted (2026-07-19) — 모노레포 채택.
+Amended (2026-07-20) — **혼합 채택**: Go SDK는 평면-root 저장소(`0xmhha/accounts`), TypeScript SDK는 별도 저장소(`0xmhha/accounts-ts`)로 분리. 골든 벡터만 동기 공유. 아래 "정정" 참조.
+
+## Amendment (2026-07-20) — TS는 별도 저장소로 분리
+
+**정정 사유(구조적 문제):** 구조 결정에서 Go를 **평면 root**로 배치하면서 Go 모듈(`github.com/0xmhha/accounts`)이 저장소 루트 그 자체가 되었다. 이 상태에서 `sdk-ts/`를 같은 저장소에 두면 Go 모듈 디렉터리 안에 TS가 중첩되어, `go get`이 TS 파일까지 가져오고 한 모듈 루트에 두 생태계가 섞이는 스멜이 발생한다. 즉 "모노레포"와 "평면-root Go"가 양립하지 못했다.
+
+**결정:** TypeScript SDK를 별도 저장소 `0xmhha/accounts-ts`로 분리한다. 두 저장소는 **conformance 골든 벡터**만 공유하며(TS repo의 `vectors/core.json`은 Go repo의 `conformance/vectors/core.json`에서 동기), 벡터는 함께 갱신해 drift를 막는다.
+
+**Trade-off:** 원자적 단일-커밋 검증(모노레포 이점)을 일부 포기하는 대신, 언어별 저장소 경계가 깨끗해지고 평면-root Go와 정합한다. 벡터 동기화는 규율(같이 갱신)로 보장한다.
 
 ## Context
 
