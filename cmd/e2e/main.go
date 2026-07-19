@@ -77,6 +77,7 @@ func main() {
 	checkWalletFacade(ctx, c, funded)
 	checkTokenAdapter(ctx, c, funded)
 	checkPermit(ctx, c, funded)
+	checkTransferWithAuth(ctx, c, funded)
 	checkHDWallet(ctx, c, funded)
 
 	summaryAndExit()
@@ -505,6 +506,58 @@ func checkPermit(ctx context.Context, c *transport.Client, funded *account.Accou
 		record("token EIP-2612 permit (off-chain sig → allowance)", "PASS", "allowance "+allow.String())
 	} else {
 		record("token EIP-2612 permit", "FAIL", fmt.Sprintf("allowance=%s err=%v", allow, err))
+	}
+}
+
+// checkTransferWithAuth runs a full EIP-3009 gasless transfer: the payer signs
+// off-chain, a relayer (funded) submits, and the recipient balance is verified.
+func checkTransferWithAuth(ctx context.Context, c *transport.Client, funded *account.Account) {
+	adapter := token.NativeCoinAdapter(c)
+	domainSep, err := adapter.DomainSeparator(ctx)
+	if err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", err.Error())
+		return
+	}
+	// payer = a fresh account funded with enough to cover the value.
+	payer, _ := account.Generate()
+	w, _ := wallet.New(ctx, funded, c)
+	if h, err := w.SendCoin(ctx, payer.Address(), new(big.Int).Mul(oneCoin, big.NewInt(2))); err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", "fund payer: "+err.Error())
+		return
+	} else if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", err.Error())
+		return
+	}
+
+	recipient, _ := account.Generate()
+	value := oneCoin
+	validAfter := big.NewInt(0)
+	validBefore := big.NewInt(99999999999)
+	var nonce [32]byte
+	copy(nonce[:], []byte("stablenet-eip3009-e2e-nonce-0001"))
+
+	digest := token.TransferWithAuthorizationDigest(domainSep, payer.Address(), recipient.Address(), value, validAfter, validBefore, nonce)
+	sig, _ := payer.Sign(digest)
+	data, err := token.TransferWithAuthorizationData(payer.Address(), recipient.Address(), value, validAfter, validBefore, nonce, sig)
+	if err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", err.Error())
+		return
+	}
+	// funded relays (pays gas); payer's value moves to recipient.
+	h, err := w.Execute(ctx, adapter.Address, data, nil)
+	if err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", "submit: "+err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", err.Error())
+		return
+	}
+	got, err := adapter.BalanceOf(ctx, recipient.Address())
+	if err == nil && got.Cmp(value) == 0 {
+		record("token EIP-3009 transferWithAuthorization (gasless)", "PASS", "recipient balanceOf "+got.String())
+	} else {
+		record("token EIP-3009 transferWithAuthorization", "FAIL", fmt.Sprintf("balanceOf=%s err=%v", got, err))
 	}
 }
 

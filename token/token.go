@@ -116,6 +116,32 @@ func bigWord(x *big.Int) []byte {
 	return out
 }
 
+// transferWithAuthTypeHash = keccak256("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)").
+var transferWithAuthTypeHash = crypto.Keccak256([]byte("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"))
+
+// TransferWithAuthorizationDigest computes the EIP-3009 signing digest for a
+// gasless transfer authorization, using the token's on-chain DOMAIN_SEPARATOR.
+func TransferWithAuthorizationDigest(domainSep [32]byte, from, to types.Address, value, validAfter, validBefore *big.Int, nonce [32]byte) []byte {
+	structHash := crypto.Keccak256(
+		transferWithAuthTypeHash,
+		word(from.Bytes()), word(to.Bytes()),
+		bigWord(value), bigWord(validAfter), bigWord(validBefore),
+		nonce[:],
+	)
+	return crypto.Keccak256([]byte{0x19, 0x01}, domainSep[:], structHash)
+}
+
+// TransferWithAuthorizationData returns calldata for the EIP-3009
+// transferWithAuthorization(...,v,r,s), given the authorizer's signature.
+func TransferWithAuthorizationData(from, to types.Address, value, validAfter, validBefore *big.Int, nonce [32]byte, sig []byte) ([]byte, error) {
+	var r, s [32]byte
+	copy(r[:], sig[0:32])
+	copy(s[:], sig[32:64])
+	v := uint64(sig[64]) + 27
+	return abi.Pack("transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32)",
+		from, to, value, validAfter, validBefore, nonce, v, r, s)
+}
+
 // TransferData returns calldata for transfer(to, amount).
 func TransferData(to types.Address, amount *big.Int) ([]byte, error) {
 	return abi.Pack("transfer(address,uint256)", to, amount)
