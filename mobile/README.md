@@ -15,10 +15,12 @@ artifacts requires the mobile toolchains (Android SDK/NDK, Xcode) and
   a 14 MB `.aar` with native `libgojni.so` for all four ABIs (armeabi-v7a,
   arm64-v8a, x86, x86_64) plus Kotlin/Java bindings exposing the API below
   (confirmed via `javap`: `Mobile.generateAccount`, `Account.addressHex`, etc.).
-- **iOS XCFramework — build path is the same** but was blocked on the build
-  machine by a broken Xcode simulator plugin (`IDESimulatorFoundation` failed to
-  load). This is an Xcode installation issue, not an SDK/gomobile one; fix with
-  `xcodebuild -runFirstLaunch` / reinstalling Xcode components, then re-run.
+- **iOS XCFramework — built and verified.** `gomobile bind -target=ios` produces
+  an `.xcframework` with device (`ios-arm64`) and simulator slices, plus
+  ObjC/Swift headers exposing the API (`MobileGenerateAccount`,
+  `Account.addressHex`, `signPersonal:`, etc.). Note: the build initially failed
+  on a stale Xcode component (`IDESimulatorFoundation` could not load); running
+  `xcodebuild -runFirstLaunch` once fixed it, after which the build succeeds.
 
 ## One-time setup
 
