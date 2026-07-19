@@ -21,28 +21,38 @@
 | params.md §4 가스팁 오라클 | `transport` (`MaxPriorityFeePerGas`) | live e2e | 완료 |
 | rpc.md RPC 표면 | `transport/client.go` | live e2e | 완료 |
 
-## 라이브 검증 (chainbench + go-stablenet)
+## 라이브 검증 (chainbench + go-stablenet) — 능력 매트릭스
 
-- 네트워크: chainbench `default` 프로파일, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
-- 실행: `go run ./cmd/e2e -keystore <preset> -password 1`.
-- 결과(모두 on-chain 채굴·status 0x1):
-  1. **실 go-stablenet keystore 복호화** → 자금 계정(keystore geth 호환 실증).
-  2. **0x00 Legacy** 전송 확인.
-  3. **0x01 AccessList** 전송 확인.
-  4. **0x02 DynamicFee** 전송 확인.
-  5. **0x16 FeeDelegate 이중서명** 전송 확인(sender/feePayer 분리) — StableNet 고유 로직이 노드와 바이트 일치 실증.
-  6. `eth_getProof.extra`로 계정 Extra 플래그 조회.
+- 네트워크: chainbench `default`, go-stablenet `gstable` v1.1.0, 5노드 WBFT, chainId **8283**(Testnet).
+- 실행: `make live-e2e` (또는 `go run ./cmd/e2e -keystore <preset> -password 1`).
+- 결과: **PASS 14 / UNSUPPORTED 1 / FAIL 0**.
 
-> 노드가 SDK 서명을 수락·채굴했다는 것은 sighash·RLP·봉투·이중서명이 노드와 **정확히 일치**함을 authoritative하게 증명한다.
+| 항목 | 결과 | 근거 |
+|------|------|------|
+| keystore.Decrypt (실 노드 keystore) | PASS | 자금 계정 복호화 |
+| transport: Balance/GasPrice/**MaxPriorityFeePerGas(Anzeon)**/EstimateGas/Call | PASS | 라이브 조회 |
+| transport.AccountFlags(`eth_getProof.extra`) | PASS | authorized/blacklisted 조회 |
+| tx 0x00 Legacy | PASS | 채굴·잔고 확인 |
+| tx 0x01 AccessList | PASS | 채굴·잔고 확인 |
+| tx 0x02 DynamicFee | PASS | 채굴·잔고 확인 |
+| **tx 0x16 FeeDelegate(이중서명)** | PASS | 채굴·잔고 확인, sender/feePayer 분리 |
+| **tx CREATE(배포)** | PASS | 배포 주소 == `CreateAddress(sender,nonce)` == 영수증 contractAddress, code 존재 |
+| **tx 0x04 SetCode(EIP-7702)** | PASS | authority 코드 == `0xef0100‖delegate` (위임 성공) |
+| tx 0x03 Blob | **UNSUPPORTED** | 노드 거부: `type 3 rejected, pool not yet in Cancun` — **체인이 Cancun 미채택**(SDK 결함 아님) |
+| crypto ECIES 암복호(offline) | PASS | 라운드트립 |
+
+> 노드가 SDK 서명을 수락·채굴했다는 것은 sighash·RLP·봉투·이중서명·EIP-7702 위임이 노드와 **정확히 일치**함을 authoritative하게 증명한다. 0x03 Blob은 SDK가 올바른 tx를 만들지만 이 체인이 4844(Cancun)를 채택하지 않아 거부된다 — 스펙 `params.md`(Cancun 미채택)와 일치.
 
 ## 남은 항목 (후속)
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 0x03 Blob / 0x04 SetCode **라이브** 전송 | 유닛 테스트만 | blob 사이드카(KZG)·7702 위임 셋업 필요 → 라이브는 후속 |
+| tx 0x03 Blob 라이브 | 체인 미지원 | go-stablenet가 Cancun/4844 미채택 → 이 체인에선 불가(SDK는 올바른 tx 생성). Cancun 도입 시 재검증 |
+| CREATE2 라이브 배포 | 미검증 | 주소 계산은 EIP-1014 known-answer로 검증. 라이브는 팩토리 컨트랙트 필요(후속) |
+| EIP-712/EIP-191 서명 헬퍼 | 미구현 | `Sign(hash)`로 우회 가능하나 표준 헬퍼 없음(dApp 로그인/permit) |
 | KeyStore OS 키체인/HSM/모바일 백엔드 | 파일 keystore만(ADR-0003 사이클1 범위) | 사이클 2 |
 | blacklist 사전조회 통합 가드 | transport에 조회 API 존재, 빌더 자동 연동은 미결 | 헬퍼로 통합 예정 |
 | 상위 SDK facade(고수준 SendTransaction 등) | 저수준 완비 | 편의 API 후속 |
-| conformance 골든 벡터 파일/러너(P2/P6) | 라이브 e2e로 대체 검증 | 회귀 자동화는 후속 |
+| ABI 인코딩/바인딩(시스템계약 호출) | raw call만 | 사이클 2 응용확장 |
 
-> no silent caps: 위 미구현은 의도적 범위이며, 서명·계정·암복호화·전 tx type의 핵심은 완료·라이브 검증되었다.
+> no silent caps: 체인이 지원하는 모든 기능(전 tx type 중 0x03 제외, 계정·서명·암복호·배포·7702·상태쿼리)은 라이브로 검증 완료. 0x03은 체인 한계이며 SDK는 올바른 tx를 생성한다.

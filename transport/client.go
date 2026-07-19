@@ -160,6 +160,15 @@ func (c *Client) SendRawTransaction(ctx context.Context, raw []byte) (types.Hash
 	return types.BytesToHash(b), nil
 }
 
+// Code returns the deployed code at addr (eth_getCode).
+func (c *Client) Code(ctx context.Context, addr types.Address) ([]byte, error) {
+	var s string
+	if err := c.call(ctx, &s, "eth_getCode", addr.Hex(), "latest"); err != nil {
+		return nil, err
+	}
+	return hex.DecodeString(strings.TrimPrefix(s, "0x"))
+}
+
 // Balance returns the account balance (eth_getBalance).
 func (c *Client) Balance(ctx context.Context, addr types.Address) (*big.Int, error) {
 	var s string
