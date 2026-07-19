@@ -74,7 +74,8 @@
 | 거버넌스 admin(minter/master-minter/validator/council) | 미구현 | 사이클 2 잔여(멀티시그 흐름) |
 | **KeyStore 저장 백엔드** | ✅ 완료 | `vault` 패키지: pluggable Backend + Memory/File(테스트) + macOS Keychain(darwin, 컴파일·로직 검증). HSM/기타는 Backend 구현으로 추가 |
 | TS 기능 파리티(전 tx type/keystore/transport/wallet/hdwallet/token) | 코어만 | 별도 repo `accounts-ts`에서 후속 |
-| **모바일 wrapper(gomobile-safe)** | ✅ 완료(코드) | `mobile` 패키지 Go 테스트 통과. 네이티브 AAR/XCFramework 생성·실기기 검증은 툴체인 필요(mobile/README) |
+| **모바일 Android AAR** | ✅ **빌드·검증** | `gomobile bind`로 4 ABI `libgojni.so` + Kotlin/Java 바인딩 생성, API(javap) 확인. `scripts/build-mobile.sh` |
+| 모바일 iOS XCFramework | ⚠️ 빌드경로 동일, 환경 블록 | 빌드머신 Xcode 시뮬레이터 플러그인 손상으로 막힘(Xcode 이슈, SDK/gomobile 문제 아님). `xcodebuild -runFirstLaunch` 후 재시도 |
 | **거버넌스 read 바인딩** | ✅ 완료 | `governance` 패키지(validator/minter/blacklist 조회), 라이브 검증 |
 | 거버넌스 admin write(mint 등) | 미구현 | 온체인 멀티시그 흐름(SDK 범위 밖) |
 
