@@ -17,6 +17,7 @@ import (
 	"github.com/0xmhha/accounts/account"
 	"github.com/0xmhha/accounts/crypto"
 	"github.com/0xmhha/accounts/signing"
+	"github.com/0xmhha/accounts/token"
 	"github.com/0xmhha/accounts/transport"
 	"github.com/0xmhha/accounts/tx"
 	"github.com/0xmhha/accounts/types"
@@ -73,6 +74,7 @@ func main() {
 	checkECIES()
 	checkSigningHelpers(funded)
 	checkWalletFacade(ctx, c, funded)
+	checkTokenAdapter(ctx, c, funded)
 
 	summaryAndExit()
 }
@@ -409,6 +411,50 @@ func checkWalletFacade(ctx context.Context, c *transport.Client, funded *account
 		record("wallet.Deploy", "PASS", "deployed="+addr.Hex())
 	} else {
 		record("wallet.Deploy", "FAIL", "no code at "+addr.Hex())
+	}
+}
+
+// checkTokenAdapter verifies NativeCoinAdapter (0x1000) ERC-20 reads and a
+// transfer via the ABI + token bindings.
+func checkTokenAdapter(ctx context.Context, c *transport.Client, funded *account.Account) {
+	adapter := token.NativeCoinAdapter(c)
+
+	// balanceOf should reflect the native balance.
+	tokBal, err := adapter.BalanceOf(ctx, funded.Address())
+	if err != nil {
+		record("token NativeCoinAdapter.balanceOf", "FAIL", err.Error())
+		return
+	}
+	nativeBal, _ := c.Balance(ctx, funded.Address())
+	if tokBal.Cmp(nativeBal) != 0 {
+		record("token NativeCoinAdapter.balanceOf", "FAIL",
+			fmt.Sprintf("adapter %s != native %s", tokBal, nativeBal))
+		return
+	}
+	record("token NativeCoinAdapter.balanceOf (== native)", "PASS", tokBal.String())
+
+	// transfer via ABI calldata + wallet.Execute.
+	w, err := wallet.New(ctx, funded, c)
+	if err != nil {
+		record("token NativeCoinAdapter.transfer", "FAIL", err.Error())
+		return
+	}
+	recipient, _ := account.Generate()
+	data, _ := token.TransferData(recipient.Address(), oneCoin)
+	h, err := w.Execute(ctx, adapter.Address, data, nil)
+	if err != nil {
+		record("token NativeCoinAdapter.transfer", "FAIL", err.Error())
+		return
+	}
+	if _, err := waitReceipt(ctx, c, h); err != nil {
+		record("token NativeCoinAdapter.transfer", "FAIL", err.Error())
+		return
+	}
+	got, err := adapter.BalanceOf(ctx, recipient.Address())
+	if err == nil && got.Cmp(oneCoin) == 0 {
+		record("token NativeCoinAdapter.transfer (ABI call)", "PASS", "recipient balanceOf "+got.String())
+	} else {
+		record("token NativeCoinAdapter.transfer", "FAIL", fmt.Sprintf("balanceOf=%s err=%v", got, err))
 	}
 }
 

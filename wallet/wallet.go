@@ -163,3 +163,38 @@ func (w *Wallet) Call(ctx context.Context, to types.Address, data []byte) ([]byt
 	from := w.Account.Address()
 	return w.Client.Call(ctx, transport.CallMsg{From: &from, To: &to, Data: data}, "latest")
 }
+
+// Execute signs and submits a state-changing contract call (0x02) to `to` with
+// the given calldata and value, auto-filling nonce, gas (estimated +20%), and
+// fees. Use this to invoke contract methods such as ERC-20 transfer/approve.
+func (w *Wallet) Execute(ctx context.Context, to types.Address, data []byte, value *big.Int) (types.Hash, error) {
+	if value == nil {
+		value = big.NewInt(0)
+	}
+	if err := w.guardTransfer(ctx, &to, value); err != nil {
+		return types.Hash{}, err
+	}
+	nonce, err := w.Client.Nonce(ctx, w.Account.Address())
+	if err != nil {
+		return types.Hash{}, err
+	}
+	from := w.Account.Address()
+	gas, err := w.Client.EstimateGas(ctx, transport.CallMsg{From: &from, To: &to, Value: value, Data: data})
+	if err != nil {
+		gas = 200000
+	} else {
+		gas = gas * 12 / 10
+	}
+	tip, feeCap, err := w.fees(ctx)
+	if err != nil {
+		return types.Hash{}, err
+	}
+	t := &tx.DynamicFeeTx{
+		ChainID: w.chainID, Nonce: nonce, GasTipCap: tip, GasFeeCap: feeCap,
+		Gas: gas, To: &to, Value: value, Data: data,
+	}
+	if err := t.Sign(w.Account.PrivateKey()); err != nil {
+		return types.Hash{}, err
+	}
+	return w.Client.SendRawTransaction(ctx, t.Encode())
+}
